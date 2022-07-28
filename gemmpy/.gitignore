@@ -1,0 +1,10 @@
+# ignore all pycache file
+__pycache__/
+
+# compiled file
+*.so
+*/*.so
+
+# idea file
+./idea/*
+
