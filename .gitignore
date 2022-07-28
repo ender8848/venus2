@@ -1,0 +1,5 @@
+*.txt
+
+Pipfile.lock
+
+compatible_tests
