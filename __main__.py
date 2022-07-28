@@ -161,27 +161,24 @@ def main():
         help="Console output switch"
     )
     parser.add_argument(
-        "--use_interval",
+        "--use_interval_in_bs",
         default=False, 
         type=boolean_string,
-        help="Console output switch"
+        help="Whether to use interval sound calculation"
     )
     parser.add_argument(
-        "--use_gpu",
+        "--use_gpu_in_bs",
         default=False, 
         type=boolean_string,
-        help="Console output switch"
+        help="whether to use gpu to assist back-substitution"
     )
     
     ARGS = parser.parse_args()
-    # print use_interval and use_gpu args
     config = Config()
     config.set_user(ARGS)
-    print(config.INTERVAL)
-    print(config.DEVICE)
-    # venus = Venus(nn=ARGS.net, spec=ARGS.spec, config=config)
+    venus = Venus(nn=ARGS.net, spec=ARGS.spec, config=config)
 
-    # venus.verify()
+    venus.verify()
 
 if __name__ == "__main__":
     main()

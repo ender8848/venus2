@@ -172,7 +172,9 @@ class Config:
         self.PRECISION = torch.float32
         self.DEVICE = torch.device('cpu')
         self._user_set_params = set()
-        self.INTERVAL = False
+        self.interval_in_bs = False
+        self.gpu_in_bs = False
+
 
     def set_param(self, param, value):
         if value is None: return
@@ -255,12 +257,10 @@ class Config:
             self.VERIFIER.CONSOLE_OUTPUT = value
         elif param == 'precision':
             self.PRECISION = value
-        elif param == 'device':
-            # if true then set cuda
-            if value is True:
-                self.DEVICE = torch.device('cuda')
-        elif param == 'interval':
-            self.INTERVAL = value
+        elif param == 'gpu_in_bs':
+                self.gpu_in_bs = value
+        elif param == 'interval_in_bs':
+            self.interval_in_bs = value
 
     def set_param_if_not_set(self, param, value):
         if not param in self._user_set_params:
@@ -343,6 +343,6 @@ class Config:
         self.set_param('relu_approximation', u_params.relu_approximation)
         self.set_param('complete', u_params.complete)
         self.set_param('console_output', u_params.console_output)
-        self.set_param('device', u_params.use_gpu)
-        self.set_param('interval', u_params.use_interval)
+        self.set_param('gpu_in_bs', u_params.use_gpu_in_bs)
+        self.set_param('interval_in_bs', u_params.use_interval_in_bs)
 
