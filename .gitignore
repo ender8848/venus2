@@ -3,3 +3,5 @@
 Pipfile.lock
 
 compatible_tests
+
+__pycache__

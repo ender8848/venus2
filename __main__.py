@@ -160,12 +160,28 @@ def main():
         type=boolean_string,
         help="Console output switch"
     )
+    parser.add_argument(
+        "--use_interval",
+        default=False, 
+        type=boolean_string,
+        help="Console output switch"
+    )
+    parser.add_argument(
+        "--use_gpu",
+        default=False, 
+        type=boolean_string,
+        help="Console output switch"
+    )
     
     ARGS = parser.parse_args()
+    # print use_interval and use_gpu args
     config = Config()
     config.set_user(ARGS)
-    venus = Venus(nn=ARGS.net, spec=ARGS.spec, config=config)
-    venus.verify()
+    print(config.INTERVAL)
+    print(config.DEVICE)
+    # venus = Venus(nn=ARGS.net, spec=ARGS.spec, config=config)
+
+    # venus.verify()
 
 if __name__ == "__main__":
     main()
