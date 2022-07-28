@@ -8,7 +8,7 @@ When running tests using the following command:
 python3 __main__.py --net ./venus/compatible_tests/data/acasxu/nets/ --spec ./venus/compatible_tests/data/acasxu/specs/ --timeout 60
 ```
 
-The following error appears: 
+The following error appears (It seems to fail in all complete methods where gurobi is needed): 
 
 ```sh
 Verifying ACASXU_run2a_1_1_batch_2000.onnx against prop_4.vnnlib
