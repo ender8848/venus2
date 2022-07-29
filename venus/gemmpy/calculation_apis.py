@@ -1,5 +1,5 @@
 import numpy as np
-from .Interval import Interval
+from Interval import Interval
 import ctypes
 import torch
 import sys
