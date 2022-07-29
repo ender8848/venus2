@@ -2,16 +2,19 @@ import numpy as np
 from Interval import Interval
 import ctypes
 import torch
+import sys
+import os
 # use np for cpu calculation
 # use torch for gpu calculation
 
 # set dynamic linking llib here
-gemmlib = ctypes.CDLL('gemmGPU.so')
-mmalib = ctypes.CDLL('mma.so')
+file_path = os.path.dirname(os.path.abspath(__file__))
+gemmlib = ctypes.CDLL(file_path + '/gemmGPU.so')
+mmalib = ctypes.CDLL(file_path + '/mma.so')
 # better put argtype setting here
 
 
-def np_array_float2interval(arr:np.ndarray):
+def float_array2np_interval_cpu_array(arr:np.ndarray):
     """
     converts a real-valued numpy array to an interval numpy array
     args: 
@@ -29,7 +32,7 @@ def np_array_float2interval(arr:np.ndarray):
     return result
 
 
-def torch_array_float2pinterval(arr:torch.Tensor):
+def torch_float_array2pinterval_gpu_array(arr:torch.Tensor):
     """
     converts a real-valued torch array to a pseudo interval torch array which uses continuous memory view to mimic an Interval array
     args: 
@@ -39,7 +42,7 @@ def torch_array_float2pinterval(arr:torch.Tensor):
     """
     if not isinstance(arr, torch.Tensor):
         raise TypeError("arr must be torch tensor")
-    result = torch.zeros((arr.shape[0], arr.shape[1]*2), dtype = torch.float32, device=arr.device)
+    result = torch.zeros((arr.shape[0], arr.shape[1]*2), dtype = torch.float32, device=torch.device('cuda'))
 
     for i in range(arr.shape[0]):
         for j in range(arr.shape[1]):
@@ -48,23 +51,34 @@ def torch_array_float2pinterval(arr:torch.Tensor):
     return result
 
 
-def get_upper(arr):
+def get_upper(arr, ret = 'torch'):
     """
     converts an interval numpy array or torch pseudo interval tensor
     to corresponding upper-value float array
     args: 
         arr: numpy Interval array or torch pseudo interval array
+        ret: return type, 'numpy' or 'torch'
     returns:
-        upper value float array
+        upper value float array, return type is cpu array
     """
     if isinstance(arr, np.ndarray) and arr.dtype != np.float32: # have to use != coz np does not recognize Interval type
-        result = np.empty((arr.shape), dtype = np.float32)
+        if ret == 'numpy' or ret == 'np':
+            result = np.empty((arr.shape), dtype = np.float32)
+        elif ret == 'torch' or ret == 't':
+            result = torch.empty((arr.shape), dtype = torch.float32)
+        else:
+            raise ValueError("ret must be 'numpy' or 'torch'")
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]):
                 result[i,j] = arr[i,j].upper
         return result
     elif isinstance(arr, torch.Tensor):
-        result = torch.empty((arr.shape[0], arr.shape[1]//2), dtype = torch.float32, device=arr.device)
+        if ret == 'numpy' or ret == 'np':
+            result = np.empty((arr.shape[0], arr.shape[1]//2), dtype = np.float32)
+        elif ret == 'torch' or ret == 't':
+            result = torch.empty((arr.shape[0], arr.shape[1]//2), dtype = torch.float32)
+        else:
+            raise ValueError("ret must be 'numpy' or 'torch'")
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]//2):
                 result[i,j] = arr[i,2*j+1]
@@ -73,23 +87,34 @@ def get_upper(arr):
         raise TypeError("arr must be numpy array or torch tensor")
 
 
-def get_lower(arr):
+def get_lower(arr, ret = 'torch'):
     """
     converts an interval numpy array or torch pseudo interval tensor
     to corresponding lower-value float array
     args: 
         arr: numpy Interval array or torch pseudo interval array
+        ret: return type, 'numpy' or 'torch'
     returns:
-        lower value float array
+        lower value float array, return type is cpu array
     """
     if isinstance(arr, np.ndarray) and arr.dtype != np.float32: # have to use != coz np does not recognize Interval type
-        result = np.empty((arr.shape), dtype = np.float32)
+        if ret == 'numpy' or ret == 'np':
+            result = np.empty((arr.shape), dtype = np.float32)
+        elif ret == 'torch' or ret == 't':
+            result = torch.empty((arr.shape), dtype = torch.float32)
+        else:
+            raise ValueError("ret must be 'numpy' or 'torch'")
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]):
                 result[i,j] = arr[i,j].lower
         return result
     elif isinstance(arr, torch.Tensor):
-        result = torch.empty((arr.shape[0], arr.shape[1]//2), dtype = torch.float32, device=arr.device)
+        if ret == 'numpy' or ret == 'np':
+            result = np.empty((arr.shape[0], arr.shape[1]//2), dtype = np.float32)
+        elif ret == 'torch' or ret == 't':
+            result = torch.empty((arr.shape[0], arr.shape[1]//2), dtype = torch.float32)
+        else:
+            raise ValueError("ret must be 'numpy' or 'torch'")
         for i in range(arr.shape[0]):
             for j in range(arr.shape[1]//2):
                 result[i,j] = arr[i,2*j]
