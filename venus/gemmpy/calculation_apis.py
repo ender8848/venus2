@@ -1,5 +1,5 @@
 import numpy as np
-from Interval import Interval
+from .Interval import Interval
 import ctypes
 import torch
 import sys
@@ -18,12 +18,10 @@ def float_array2np_interval_cpu_array(arr:np.ndarray):
     """
     converts a real-valued numpy array to an interval numpy array
     args: 
-        arr: numpy array
+        arr: array_like
     returns:
         an numpy array converted from arr
     """
-    if not isinstance(arr, np.ndarray):
-        raise TypeError("arr must be numpy array")
     result = np.empty((arr.shape),dtype=Interval)
 
     for i in range(arr.shape[0]):
