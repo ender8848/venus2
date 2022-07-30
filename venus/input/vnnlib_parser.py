@@ -39,10 +39,7 @@ class VNNLIBParser:
         i_b, o_f, i_cl = parser.parse(lexer.tokenize(string))
         specs = []
         if len(i_cl) == 0:
-            bounds = Bounds(
-                i_b[0].reshape(self.input_shape),
-                i_b[1].reshape(self.input_shape)
-            )
+            bounds = Bounds(self.config, i_b[1].reshape(self.input_shape), i_b[0].reshape(self.input_shape))
             specs.append(
                 Specification(
                     Input(bounds, self.config),

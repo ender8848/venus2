@@ -39,9 +39,17 @@ class Equation():
                 constant term.
         """
         self.matrix = matrix
+        self.matrix_intv = None
         self.const = const
+        self.const_intv = None
         self.config = config
         self.size = matrix.shape[0]
+        # if config.interval_in_bs is True and config.gpu_in_bs is False:
+        #     self.matrix_intv = float_array2np_interval_cpu_array(matrix)
+        #     self.const_intv = float_array2np_interval_cpu_array(const)
+        # elif config.interval_in_bs is True and config.gpu_in_bs is True:
+        #     self.matrix_intv = torch_float_array2pinterval_gpu_array(matrix)
+        #     self.const_intv = torch_float_array2pinterval_gpu_array(const)
 
     def copy(self, matrix=None, const=None) -> Equation:
         return Equation(
@@ -50,23 +58,35 @@ class Equation():
             self.size
         )
  
-    def _get_plus_matrix(self) -> torch.Tensor:
+    def _get_plus_matrix(self, force_float = False) -> torch.Tensor:
         """
         Clips the coeffs to be only positive.
         """
+        res = torch.clamp(self.matrix, 0, math.inf)
+        if force_float is True:
+            return res
+        if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
+            return float_array2np_interval_cpu_array(res)
+        elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
+            return torch_float_array2pinterval_gpu_array(res)
+        return res
 
-        return torch.clamp(self.matrix, 0, math.inf)
 
-
-    def _get_minus_matrix(self, keep_in_memory=True) -> torch.Tensor:
+    def _get_minus_matrix(self, keep_in_memory=True, force_float = False) -> torch.Tensor:
         """
         Clips the coeffs to be only negative.
         """
-        
-        return torch.clamp(self.matrix, -math.inf, 0)
+        res = torch.clamp(self.matrix, -math.inf, 0)
+        if force_float is True:
+            return res
+        if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
+            return float_array2np_interval_cpu_array(res)
+        elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
+            return torch_float_array2pinterval_gpu_array(res)
+        return res
 
 
-    def concrete_values(self, lower: torch.Tensor, upper:torch.Tensor, bound: str) -> torch.Tensor:
+    def concrete_values(self, lower, upper, bound: str) -> torch.Tensor:
         if bound == 'lower':
             return self.min_values(lower, upper)
         
@@ -114,31 +134,23 @@ class Equation():
         return self.interval_dot('lower', lower, upper)
 
 
-    def interval_dot(self, bound: str, lower: torch.Tensor, upper: torch.Tensor) -> torch.Tensor:
+    def interval_dot(self, bound: str, lower, upper) -> torch.Tensor:
         """
         Computes the interval dot product with either a matrix or an Equation.
         """
         if bound == 'upper':
             # delegate to numpy sound calculation
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
-                plus_matrix_intv = float_array2np_interval_cpu_array(self._get_plus_matrix())
-                minus_matrix_intv = float_array2np_interval_cpu_array(self._get_minus_matrix())
-                lower_intv = float_array2np_interval_cpu_array(lower.reshape(lower.size()[0], -1))
-                upper_intv = float_array2np_interval_cpu_array(upper.reshape(upper.size()[0], -1))
                 return get_upper(
-                    add(mat_mul(plus_matrix_intv, upper_intv, True),
-                        mat_mul(minus_matrix_intv, lower_intv, True),
+                    add(mat_mul(self._get_plus_matrix(), upper, True),
+                        mat_mul(self._get_minus_matrix(), lower, True),
                         True)
                 ).reshape(-1) + self.const
             # delegate to gemmc sound calculation API
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-                plus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_plus_matrix())
-                minus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_minus_matrix())
-                lower_intv = torch_float_array2pinterval_gpu_array(lower.reshape(lower.size()[0], -1))
-                upper_intv = torch_float_array2pinterval_gpu_array(upper.reshape(upper.size()[0], -1))
                 return get_upper(
-                    add(mat_mul(plus_matrix_intv, upper_intv, True),
-                        mat_mul(minus_matrix_intv, lower_intv, True),
+                    add(mat_mul(self._get_plus_matrix(), upper, True),
+                        mat_mul(self._get_minus_matrix(), lower, True),
                         True)
                 ).reshape(-1) + self.const
             # non-interval cases can be calculated by torch
@@ -149,24 +161,16 @@ class Equation():
         elif bound == 'lower':
             # delegate to numpy sound calculation
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
-                plus_matrix_intv = float_array2np_interval_cpu_array(self._get_plus_matrix())
-                minus_matrix_intv = float_array2np_interval_cpu_array(self._get_minus_matrix())
-                lower_intv = float_array2np_interval_cpu_array(lower.reshape(lower.size()[0], -1))
-                upper_intv = float_array2np_interval_cpu_array(upper.reshape(upper.size()[0], -1))
                 return get_lower(
-                    add(mat_mul(plus_matrix_intv, lower_intv, True),
-                        mat_mul(minus_matrix_intv, upper_intv, True),
+                    add(mat_mul(self._get_plus_matrix(), lower, True),
+                        mat_mul(self._get_minus_matrix(), upper, True),
                         True)
                 ).reshape(-1) + self.const
             # delegate to gemmc sound calculation API
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-                plus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_plus_matrix())
-                minus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_minus_matrix())
-                lower_intv = torch_float_array2pinterval_gpu_array(lower.reshape(lower.size()[0], -1))
-                upper_intv = torch_float_array2pinterval_gpu_array(upper.reshape(upper.size()[0], -1))
                 return get_lower(
-                    add(mat_mul(plus_matrix_intv, lower_intv, True),
-                        mat_mul(minus_matrix_intv, upper_intv, True),
+                    add(mat_mul(self._get_plus_matrix(), lower, True),
+                        mat_mul(self._get_minus_matrix(), upper, True),
                         True)
                 ).reshape(-1) + self.const
             # non-interval cases can be calculated by torch
@@ -256,28 +260,24 @@ class Equation():
             node.bounds.lower.flatten()[node.to_node[0].get_unstable_flag()]
 
         if bound == 'lower':
-            plus = self._get_plus_matrix() * lower_slope
-            minus = self._get_minus_matrix() * upper_slope
+            plus = self._get_plus_matrix(force_float=True) * lower_slope
+            minus = self._get_minus_matrix(force_float=True) * upper_slope
             # delegate to numpy sound calculation
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
-                plus_matrix_intv = float_array2np_interval_cpu_array(self._get_plus_matrix())
-                minus_matrix_intv = float_array2np_interval_cpu_array(self._get_minus_matrix())
                 lower_const_intv = float_array2np_interval_cpu_array(lower_const.reshape(lower_const.size()[0], -1))
                 upper_const_intv = float_array2np_interval_cpu_array(upper_const.reshape(upper_const.size()[0], -1))
                 const = get_lower(
-                    add(mat_mul(plus_matrix_intv,lower_const_intv,True),
-                        mat_mul(minus_matrix_intv,upper_const_intv,True),
+                    add(mat_mul(self._get_plus_matrix(),lower_const_intv,True),
+                        mat_mul(self._get_minus_matrix(),upper_const_intv,True),
                         True)
                 ).reshape(-1)
             # delefate to gemmc API sound calculation
             elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-                plus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_plus_matrix())
-                minus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_minus_matrix())
                 lower_const_intv = torch_float_array2pinterval_gpu_array(lower_const.reshape(lower_const.size()[0], -1))
                 upper_const_intv = torch_float_array2pinterval_gpu_array(upper_const.reshape(upper_const.size()[0], -1))
                 const = get_lower(
-                    add(mat_mul(plus_matrix_intv,lower_const_intv,True),
-                        mat_mul(minus_matrix_intv,upper_const_intv,True),
+                    add(mat_mul(self._get_plus_matrix(),lower_const_intv,True),
+                        mat_mul(self._get_minus_matrix(),upper_const_intv,True),
                         True)
                 ).reshape(-1)
             # non-interval cases can be dealt with by torch
@@ -287,28 +287,24 @@ class Equation():
 
 
         elif bound == 'upper':
-            plus = self._get_plus_matrix()  * upper_slope
-            minus = self._get_minus_matrix() * lower_slope
+            plus = self._get_plus_matrix(force_float=True)  * upper_slope
+            minus = self._get_minus_matrix(force_float=True) * lower_slope
             # delegate to numpy sound calculation
             if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
-                plus_matrix_intv = float_array2np_interval_cpu_array(self._get_plus_matrix())
-                minus_matrix_intv = float_array2np_interval_cpu_array(self._get_minus_matrix())
                 lower_const_intv = float_array2np_interval_cpu_array(lower_const.reshape(lower_const.size()[0], -1))
                 upper_const_intv = float_array2np_interval_cpu_array(upper_const.reshape(upper_const.size()[0], -1))
                 const = get_upper(
-                    add(mat_mul(plus_matrix_intv,upper_const_intv,True),
-                        mat_mul(minus_matrix_intv,lower_const_intv,True),
+                    add(mat_mul(self._get_plus_matrix(),upper_const_intv,True),
+                        mat_mul(self._get_minus_matrix(),lower_const_intv,True),
                         True)
                 ).reshape(-1)
             # delefate to gemmc API sound calculation
             elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-                plus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_plus_matrix())
-                minus_matrix_intv = torch_float_array2pinterval_gpu_array(self._get_minus_matrix())
                 lower_const_intv = torch_float_array2pinterval_gpu_array(lower_const.reshape(lower_const.size()[0], -1))
                 upper_const_intv = torch_float_array2pinterval_gpu_array(upper_const.reshape(upper_const.size()[0], -1))
                 const = get_upper(
-                    add(mat_mul(plus_matrix_intv,upper_const_intv,True),
-                        mat_mul(minus_matrix_intv,lower_const_intv,True),
+                    add(mat_mul(self._get_plus_matrix(),upper_const_intv,True),
+                        mat_mul(self._get_minus_matrix(),lower_const_intv,True),
                         True)
                 ).reshape(-1)
             # non-interval cases can be dealt with by torch

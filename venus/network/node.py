@@ -204,7 +204,7 @@ class Constant(Node):
             const.shape,
             config,
             depth=0,
-            bounds=Bounds(const, const),
+            bounds=Bounds(config, const, const),
             id=id
         )
 

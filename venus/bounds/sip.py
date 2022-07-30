@@ -129,10 +129,7 @@ class SIP:
                 math.inf
             )
 
-        return Bounds(
-            torch.reshape(lower, node.output_shape),
-            torch.reshape(upper, node.output_shape)
-        )
+        return Bounds(self.config, torch.reshape(upper, node.output_shape), torch.reshape(lower, node.output_shape))
 
     def compute_symb_concr_bounds(self, node: Node) -> Bounds:
         symb_eq = self.compute_symb_eq(node)
@@ -161,17 +158,15 @@ class SIP:
         return True
 
     def back_substitution(self, eq, node):
-        return Bounds(
-            self._back_substitution(eq, node.from_node[0], 'lower'),
-            self._back_substitution(eq, node.from_node[0], 'upper'),
-        )
+        return Bounds(self.config, self._back_substitution(eq, node.from_node[0], 'upper'),
+                      self._back_substitution(eq, node.from_node[0], 'lower'))
 
     def _back_substitution(self, eq, node, bound):
         if bound not in ['lower', 'upper']:
             raise ValueError("Bound type {bound} not recognised.")
 
         if isinstance(node, Input):
-            return eq.concrete_values(node.bounds.lower.flatten(), node.bounds.upper.flatten(), bound)
+            return eq.concrete_values(node.bounds.get_lower(), node.bounds.get_upper(), bound)
 
         elif type(node) in [Relu, Flatten]:
             pass

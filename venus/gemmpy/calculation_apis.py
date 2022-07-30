@@ -1,5 +1,5 @@
 import numpy as np
-from Interval import Interval
+from venus.gemmpy.Interval import Interval
 import ctypes
 import torch
 import sys

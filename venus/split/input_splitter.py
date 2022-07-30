@@ -115,7 +115,7 @@ class InputSplitter:
         l[dim] = split_point
         prob1 = VerificationProblem(
             prob.nn.copy(),
-            prob.spec.copy(Input(Bounds(l, u), self.config)),
+            prob.spec.copy(Input(Bounds(self.config, u, l), self.config)),
             prob.depth + 1,
             self.config
         )
@@ -124,7 +124,7 @@ class InputSplitter:
         u[dim] = split_point
         prob2 = VerificationProblem(
             prob.nn.copy(),
-            prob.spec.copy(Input(Bounds(l, u), self.config)),
+            prob.spec.copy(Input(Bounds(self.config, u, l), self.config)),
             prob.depth + 1,
             self.config
         )
