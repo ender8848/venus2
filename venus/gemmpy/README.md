@@ -28,6 +28,8 @@ nvcc -O3 -shared -Xcompiler -fPIC gemmc/lib/mma.cu -o mma.so
 
 # run the test
 
+In gemmpy root, execute the following command
+
 ```
 python calculation_apis_test.py
 ```
