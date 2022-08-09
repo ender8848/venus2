@@ -10,3 +10,6 @@ __pycache__
 
 
 venus/benchmarks/
+
+venus_log.txt
+venus_summary.txt

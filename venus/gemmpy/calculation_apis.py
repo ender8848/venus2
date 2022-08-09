@@ -1,5 +1,5 @@
 import numpy as np
-from Interval import Interval
+from venus.gemmpy.Interval import Interval
 import ctypes
 import torch
 import sys
@@ -23,7 +23,7 @@ def float_array2np_interval_cpu_array(arr:np.ndarray):
         an numpy array converted from arr
     """
     result = np.empty((arr.shape),dtype=Interval)
-
+    
     for i in range(arr.shape[0]):
         for j in range(arr.shape[1]):
             result[i,j] = Interval(arr[i,j], arr[i,j])
@@ -40,12 +40,15 @@ def torch_float_array2pinterval_gpu_array(arr:torch.Tensor):
     """
     if not isinstance(arr, torch.Tensor):
         raise TypeError("arr must be torch tensor")
-    result = torch.zeros((arr.shape[0], arr.shape[1]*2), dtype = torch.float32, device=torch.device('cuda'))
+    result = torch.repeat_interleave(arr, 2, dim = 1)
+    # convert to gpu memory
+    result = result.to(torch.device('cuda'))
+    # result = torch.zeros((arr.shape[0], arr.shape[1]*2), dtype = torch.float32, device=torch.device('cuda'))
 
-    for i in range(arr.shape[0]):
-        for j in range(arr.shape[1]):
-            result[i,2*j] = arr[i][j]
-            result[i,2*j+1] = arr[i][j]
+    # for i in range(arr.shape[0]):
+    #     for j in range(arr.shape[1]):
+    #         result[i,2*j] = arr[i][j]
+    #         result[i,2*j+1] = arr[i][j]
     return result
 
 

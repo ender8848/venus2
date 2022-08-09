@@ -44,6 +44,10 @@ class Equation():
         self.const_intv = None
         self.config = config
         self.size = matrix.shape[0]
+        
+        if config.interval_in_bs is True and config.gpu_in_bs is True:
+            if (self.matrix is not None) and (self.const is not None):
+                self.matrix_intv = torch_float_array2pinterval_gpu_array(matrix)
         # if config.interval_in_bs is True and config.gpu_in_bs is False:
         #     self.matrix_intv = float_array2np_interval_cpu_array(matrix)
         #     self.const_intv = float_array2np_interval_cpu_array(const)
@@ -62,28 +66,32 @@ class Equation():
         """
         Clips the coeffs to be only positive.
         """
-        res = torch.clamp(self.matrix, 0, math.inf)
+        
         if force_float is True:
+            res = torch.clamp(self.matrix, 0, math.inf)
             return res
         if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
+            res = torch.clamp(self.matrix, 0, math.inf)
             return float_array2np_interval_cpu_array(res)
         elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-            return torch_float_array2pinterval_gpu_array(res)
-        return res
+            return torch.clamp(self.matrix_intv, 0, math.inf)
+        return torch.clamp(self.matrix, 0, math.inf)
 
 
     def _get_minus_matrix(self, keep_in_memory=True, force_float = False) -> torch.Tensor:
         """
         Clips the coeffs to be only negative.
         """
-        res = torch.clamp(self.matrix, -math.inf, 0)
+        
         if force_float is True:
+            res = torch.clamp(self.matrix, -math.inf, 0)
             return res
         if self.config.interval_in_bs is True and self.config.gpu_in_bs is False:
+            res = torch.clamp(self.matrix, -math.inf, 0)
             return float_array2np_interval_cpu_array(res)
         elif self.config.interval_in_bs is True and self.config.gpu_in_bs is True:
-            return torch_float_array2pinterval_gpu_array(res)
-        return res
+            return torch.clamp(self.matrix_intv, -math.inf, 0)
+        return torch.clamp(self.matrix, -math.inf, 0)
 
 
     def concrete_values(self, lower, upper, bound: str) -> torch.Tensor:
